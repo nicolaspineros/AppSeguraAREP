@@ -11,7 +11,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 
-public class ScureURLReader {
+public class SecureURLReader {
     public static void main(String[] args) throws IOException, KeyStoreException, NoSuchAlgorithmException, CertificateException, KeyManagementException {
         // Create a file and a password representation
         File trustStoreFile = new File("keystores/ecikeystore.p12");
@@ -36,15 +36,40 @@ public class ScureURLReader {
         readURL("https://www.google.com");
     }
 
-    public static void readURL(String url) throws MalformedURLException {
+    public static void setKey(String key, String pwd) throws IOException, KeyStoreException, NoSuchAlgorithmException, CertificateException, KeyManagementException{
+        File trustStoreFile = new File("keystores/"+key);
+        System.out.println(trustStoreFile);
+        char[] trustStorePassword = pwd.toCharArray();
+        System.out.println(trustStorePassword);
+        // Load the trust store, the default type is "pkcs12", the alternative is "jks"
+        KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
+        trustStore.load(new FileInputStream(trustStoreFile), trustStorePassword);
+        // Get the singleton instance of the TrustManagerFactory
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        tmf.init(trustStore);
+        //Set the default global SSLContext so all the connections will use it
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(null, tmf.getTrustManagers(), null);
+        SSLContext.setDefault(sslContext);
+
+        // Itit the TrustManagerFactory using the truststore object
+        tmf.init(trustStore);
+    }
+
+
+    public static String readURL(String url) throws MalformedURLException {
         URL site = new URL(url);
         try ( BufferedReader reader = new BufferedReader(new InputStreamReader(site.openStream()))) {
             String inputLine = null;
             while ((inputLine = reader.readLine()) != null) {
                 System.out.println(inputLine);
+                return inputLine;
             }
+            return inputLine;
         } catch (IOException x) {
             System.err.println(x);
+            return "404";
         }
+
     }
 }
